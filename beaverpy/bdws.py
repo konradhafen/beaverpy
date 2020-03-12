@@ -3,8 +3,9 @@ import numpy as np
 import os
 import math
 
-class BDLoG:
-    def __init__(self, brat, dem , fac, outDir, bratCap, stat = None):
+
+class DamLocations:
+    def __init__(self, brat, dem, fac, outDir, bratCap, stat=None):
         """
         Initialization of the Beaver Dam Location Generator class.
 
@@ -421,7 +422,8 @@ class BDLoG:
         del self.idOut
         del self.capRank
 
-class BDSWEA:
+
+class SurfaceWater:
     def __init__(self, dem, fdir, fac, id, outDir, modPoints):
         """
         Initialization of the Beaver Dam Surface Water Estimation Algorithm class.
@@ -455,12 +457,13 @@ class BDSWEA:
         """
         self.FLOW_DIR_ESRI = np.array([32, 64, 128, 16, 0, 1, 8, 4, 2])
         self.FLOW_DIR_TAUDEM = np.array([4, 3, 2, 5, 0, 1, 6, 7, 8])
+        self.FLOW_DIR_RICHDEM = np.array([2, 3, 4, 1, 0, 5, 8, 7, 6])
         self.ROW_OFFSET = np.array([-1, -1, -1, 0, 0, 0, 1, 1, 1])
         self.COL_OFFSET = np.array([-1, 0, 1, -1, 0, 1, -1, 0, 1])
         self.MAX_POND_AREA = 100000 #in square meters
         self.MAX_HEIGHT = 5.0 #in meters
 
-    def setVars(self, dem, fdir, fac, id, shp):
+    def setVars(self, dem, fdir, fac, id, shp, fdirid=1):
         """
         Set class variables.
 
@@ -469,6 +472,7 @@ class BDSWEA:
         :param fac: Path to binary raster representing the stream network with a value of 1 (generally a thresholded flow accumulation).
         :param id: Path to dam ID raster.
         :param shp: Path to shapefile of dam locations.
+        :param fdirid: Flow direction type (1: ESRI (default), 2: TauDEM, 3: RichDEM)
 
         :return: None
         """
@@ -492,7 +496,10 @@ class BDSWEA:
         if max > 8:
             self.FLOW_DIR = self.FLOW_DIR_ESRI
         else:
-            self.FLOW_DIR = self.FLOW_DIR_TAUDEM
+            if fdirid == 2:
+                self.FLOW_DIR = self.FLOW_DIR_TAUDEM
+            elif fdirid == 3:
+                self.FLOW_DIR = self.FLOW_DIR_RICHDEM
 
     def createOutputArrays(self):
         """
@@ -664,7 +671,7 @@ class BDSWEA:
             ds.GetRasterBand(1).SetNoDataValue(-9999.0)
             ds = None
         else:
-            print "output shape different from input DEM"
+            print("output shape different from input DEM")
 
     def saveOutputs(self):
         """
@@ -685,11 +692,11 @@ class BDSWEA:
         :return: None
         """
 
-        print "running BDSWEA"
+        print("running BDSWEA")
         self.heightAboveDams()
         self.calculateWaterDepth()
         self.saveOutputs()
-        print "calculating pond statistics"
+        print("calculating pond statistics")
         self.summarizePondStatistics()
 
     def summarizePondStatistics(self):
